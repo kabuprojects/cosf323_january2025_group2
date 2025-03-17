@@ -36,8 +36,24 @@
             margin: 5px 0;
             font-family: monospace;
         }
+        #interfaces {
+            margin-top: 20px;
+        }
     </style>
     <script>
+        async function fetchInterfaces() {
+            const response = await fetch('/interfaces');
+            const interfaces = await response.json();
+            const interfacesContainer = document.getElementById('interfaces');
+            interfacesContainer.innerHTML = '';
+            interfaces.forEach(iface => {
+                const optionElement = document.createElement('option');
+                optionElement.value = iface.name;
+                optionElement.textContent = `${iface.name} (${iface.ip})`;
+                interfacesContainer.appendChild(optionElement);
+            });
+        }
+
         async function fetchLogs() {
             const response = await fetch('/logs');
             const logs = await response.json();
@@ -50,11 +66,29 @@
             });
         }
 
-        setInterval(fetchLogs, 1000); // Fetch logs every second
+        function startCapture() {
+            const selectedInterface = document.getElementById('interfaces').value;
+            fetch(`/start_capture?interface=${selectedInterface}`);
+        }
+
+        function stopCapture() {
+            fetch('/stop_capture');
+        }
+
+        window.onload = function() {
+            fetchInterfaces();
+            setInterval(fetchLogs, 1000); // Fetch logs every second
+        }
     </script>
 </head>
 <body>
     <h1>Packet Logs</h1>
+    <div>
+        <label for="interfaces">Select Network Interface:</label>
+        <select id="interfaces"></select>
+        <button onclick="startCapture()">Start Capture</button>
+        <button onclick="stopCapture()">Stop Capture</button>
+    </div>
     <div id="logs">
         <!-- Logs will be displayed here -->
     </div>
