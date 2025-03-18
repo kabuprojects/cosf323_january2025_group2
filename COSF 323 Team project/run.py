@@ -1,4 +1,6 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
+from flask_pymongo import PyMongo
+from flask_bcrypt import Bcrypt
 import threading
 from scapy.all import sniff, IP, TCP, UDP
 import time
@@ -7,11 +9,17 @@ import socket
 import joblib
 import pandas as pd
 from collections import defaultdict
+import os
 
 app = Flask(__name__)
+app.config["MONGO_URI"] = "mongodb+srv://mmuriithi:14880@cluster0.jv0jw.mongodb.net/mydatabase"
+app.config["SECRET_KEY"] = "your_secret_key"
+mongo = PyMongo(app)
+bcrypt = Bcrypt(app)
 
 # Load the trained model
-model = joblib.load('trained_model.pkl')
+model_path = os.path.join(os.path.dirname(__file__), 'trained_model.pkl')
+model = joblib.load(model_path)
 
 # Global list to store packet logs and notifications
 packet_logs = []
@@ -46,21 +54,37 @@ def process_packet(packet):
         prediction = model.predict([features])[0]
         print(f"Prediction: {prediction}")  # Debugging statement
         
-        log = f"Packet: {ip_layer.src} -> {ip_layer.dst} ({transport_layer}) at {time.strftime('%Y-%m-%d %H:%M:%S')}"
-        if prediction == 0:  # 0 indicates a malicious packet
-            log += " [WARNING: Malicious Packet Detected]"
-            # Inform the user about the detected malicious packet
-            inform_user(log)
-        else:  # 1 indicates a benign packet
-            log += " [INFO: Benign Packet]"
+        log = {
+            'message': f"Packet: {ip_layer.src} -> {ip_layer.dst} ({transport_layer}) at {time.strftime('%Y-%m-%d %H:%M:%S')}",
+            'type': 'benign' if prediction == 1 else 'malicious',
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'src_ip': ip_layer.src,
+            'dst_ip': ip_layer.dst,
+            'protocol': transport_layer
+        }
         
-        # Add the log to the packet logs list
-        packet_logs.append(log)
-        # Ensure the packet logs list does not exceed the limit
-        if len(packet_logs) > PACKET_LOGS_LIMIT:
-            packet_logs.pop(0)
-        
-        print(log)  # Print to console for debugging
+        # Check if the packet already exists in the logs
+        if not any(
+            existing_log['src_ip'] == log['src_ip'] and
+            existing_log['dst_ip'] == log['dst_ip'] and
+            existing_log['protocol'] == log['protocol'] and
+            existing_log['timestamp'] == log['timestamp']
+            for existing_log in packet_logs
+        ):
+            if prediction == 0:  # 0 indicates a malicious packet
+                log['message'] += " [WARNING: Malicious Packet Detected]"
+                # Inform the user about the detected malicious packet
+                inform_user(log['message'])
+            else:  # 1 indicates a benign packet
+                log['message'] += " [INFO: Benign Packet]"
+            
+            # Add the log to the packet logs list
+            packet_logs.append(log)
+            # Ensure the packet logs list does not exceed the limit
+            if len(packet_logs) > PACKET_LOGS_LIMIT:
+                packet_logs.pop(0)
+            
+            print(log['message'])  # Print to console for debugging
 
 def extract_features(packet):
     """Extract features from the packet for the machine learning model."""
@@ -86,7 +110,7 @@ def extract_features(packet):
     dst_host_same_srv_rate = dst_port_count[dst_port] / dst_host_srv_count if dst_host_srv_count > 0 else 0
     dst_host_same_src_port_rate = src_port_count[src_port] / dst_host_srv_count if dst_host_srv_count > 0 else 0
 
-    # Feature extraction based on the model)
+    # Feature extraction based on the model
     features = {
         'protocol_type': packet[IP].proto,
         'service': src_port,
@@ -103,7 +127,6 @@ def extract_features(packet):
 
 def inform_user(message):
     """Inform the user about detected malicious packets."""
-    # This function can be customized to send notifications, emails, etc.
     notifications.append(message)
     print(f"ALERT: {message}")  # Debugging statement
 
@@ -155,18 +178,63 @@ def interfaces():
 @app.route('/')
 def index():
     """Serve the main page with packet logs."""
-    return render_template('index.html', logs=packet_logs)
+    if 'username' in session:
+        return render_template('index.html', logs=packet_logs)
+    return redirect(url_for('login'))
 
 @app.route('/logs')
 def logs():
     """Provide packet logs in JSON format."""
-    return jsonify(packet_logs)
+    if 'username' in session:
+        return jsonify(packet_logs)
+    return redirect(url_for('login'))
 
 @app.route('/notifications')
 def get_notifications():
     """Provide notifications in JSON format."""
-    print(f"Notifications: {notifications}")  # Debugging statement
-    return jsonify(notifications)
+    if 'username' in session:
+        return jsonify(notifications)
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Login page."""
+    if request.method == 'POST':
+        users = mongo.db.users
+        login_user = users.find_one({'username': request.form['username']})
+
+        if login_user and bcrypt.check_password_hash(login_user['password'], request.form['password']):
+            session['username'] = request.form['username']
+            return redirect(url_for('index'))
+
+        flash('Invalid username/password combination')
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """Registration page."""
+    if request.method == 'POST':
+        users = mongo.db.users
+        existing_user = users.find_one({'username': request.form['username']})
+
+        if existing_user is None:
+            hashpass = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
+            users.insert_one({
+                'username': request.form['username'],
+                'email': request.form['email'],
+                'password': hashpass
+            })
+            flash('Registration successful! Please log in.')
+            return redirect(url_for('login'))
+
+        flash('Username already exists')
+    return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    """Logout the current user."""
+    session.pop('username', None)
+    return redirect(url_for('login'))
 
 if __name__ == "__main__":
     # Run the Flask web application

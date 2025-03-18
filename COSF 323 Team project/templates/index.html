@@ -4,48 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Packet Logs</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        h1 {
-            color: #333;
-            margin-top: 20px;
-        }
-        #container {
-            display: flex;
-            justify-content: space-between;
-            width: 80%;
-            max-width: 1600px;
-            margin-top: 20px;
-            gap: 20px; 
-        }
-        #logs, #notifications {
-            width: 48%;
-            background: #fff;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            overflow-y: auto;
-            max-height: 70vh;
-        }
-        #logs p, #notifications p {
-            background: #e7f3fe;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 5px 0;
-            font-family: monospace;
-        }
-        #interfaces {
-            margin-top: 20px;
-        }
-    </style>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
     <script>
         async function fetchInterfaces() {
             const response = await fetch('/interfaces');
@@ -60,28 +20,55 @@
             });
         }
 
-        async function fetchLogs() {
+        async function fetchLogs(filter = null, sort = null) {
             const response = await fetch('/logs');
             const logs = await response.json();
             const logsContainer = document.getElementById('logs');
             logsContainer.innerHTML = '';
-            logs.forEach(log => {
+
+            // Apply filter if provided
+            let filteredLogs = filter ? logs.filter(filter) : logs;
+
+            // Apply sorting if provided
+            if (sort) {
+                filteredLogs = filteredLogs.sort(sort);
+            }
+
+            filteredLogs.forEach(log => {
                 const logElement = document.createElement('p');
-                logElement.textContent = log;
+                logElement.textContent = log.message;
+                logElement.className = `log-entry ${log.type}`;
                 logsContainer.appendChild(logElement);
             });
         }
 
-        async function fetchNotifications() {
-            const response = await fetch('/notifications');
-            const notifications = await response.json();
-            const notificationsContainer = document.getElementById('notifications');
-            notificationsContainer.innerHTML = '';
-            notifications.forEach(notification => {
-                const notificationElement = document.createElement('p');
-                notificationElement.textContent = notification;
-                notificationsContainer.appendChild(notificationElement);
-            });
+        function applyFilter() {
+            const filterType = document.getElementById('filter-type').value;
+
+            // Define filter logic
+            const filterLogic = (log) => {
+                if (filterType === 'good') return log.type === 'benign';
+                if (filterType === 'malicious') return log.type === 'malicious';
+                return true; // No filter
+            };
+
+            fetchLogs(filterLogic);
+        }
+
+        function applySort() {
+            const sortType = document.getElementById('sort-type').value;
+
+            // Define sort logic
+            const sortLogic = (a, b) => {
+                if (sortType === 'time') {
+                    return new Date(a.timestamp) - new Date(b.timestamp); // Sort by time (ascending)
+                } else if (sortType === 'date') {
+                    return new Date(a.timestamp).setHours(0, 0, 0, 0) - new Date(b.timestamp).setHours(0, 0, 0, 0); // Sort by date (ascending)
+                }
+                return 0; // No sorting
+            };
+
+            fetchLogs(null, sortLogic);
         }
 
         function startCapture() {
@@ -99,19 +86,36 @@
 
         window.onload = function() {
             fetchInterfaces();
-            setInterval(fetchLogs, 1000); // Fetch logs every second
-            setInterval(fetchNotifications, 1000); // Fetch notifications every second
+            fetchLogs();
         }
     </script>
 </head>
 <body>
+    <nav>
+        <div>Packet Logs</div>
+        <div>
+            <a href="/logout">Logout</a>
+        </div>
+    </nav>
     <h1>Packet Logs</h1>
-    <div>
+    <div class="controls">
         <label for="interfaces">Select Network Interface:</label>
         <select id="interfaces"></select>
         <button onclick="startCapture()">Start Capture</button>
         <button onclick="stopCapture()">Stop Capture</button>
         <button onclick="clearLogs()">Clear Logs</button>
+        <select id="filter-type">
+            <option value="">All</option>
+            <option value="good">Good Packets</option>
+            <option value="malicious">Malicious Packets</option>
+        </select>
+        <button onclick="applyFilter()">Filter</button>
+        <select id="sort-type">
+            <option value="">No Sorting</option>
+            <option value="time">Sort by Time</option>
+            <option value="date">Sort by Date</option>
+        </select>
+        <button onclick="applySort()">Sort</button>
     </div>
     <div id="container">
         <div id="logs">
