@@ -47,11 +47,11 @@ def process_packet(packet):
         print(f"Prediction: {prediction}")  # Debugging statement
         
         log = f"Packet: {ip_layer.src} -> {ip_layer.dst} ({transport_layer}) at {time.strftime('%Y-%m-%d %H:%M:%S')}"
-        if prediction == 1:  # 1 indicates a malicious packet
+        if prediction == 0:  # 0 indicates a malicious packet
             log += " [WARNING: Malicious Packet Detected]"
             # Inform the user about the detected malicious packet
             inform_user(log)
-        else:  # 0 indicates a benign packet
+        else:  # 1 indicates a benign packet
             log += " [INFO: Benign Packet]"
         
         # Add the log to the packet logs list
