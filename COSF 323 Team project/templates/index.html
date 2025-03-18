@@ -18,18 +18,24 @@
             color: #333;
             margin-top: 20px;
         }
-        #logs {
+        #container {
+            display: flex;
+            justify-content: space-between;
             width: 80%;
-            max-width: 800px;
+            max-width: 1600px;
+            margin-top: 20px;
+            gap: 20px; 
+        }
+        #logs, #notifications {
+            width: 48%;
             background: #fff;
             padding: 20px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
-            margin-top: 20px;
             overflow-y: auto;
             max-height: 70vh;
         }
-        #logs p {
+        #logs p, #notifications p {
             background: #e7f3fe;
             padding: 10px;
             border-radius: 4px;
@@ -66,6 +72,18 @@
             });
         }
 
+        async function fetchNotifications() {
+            const response = await fetch('/notifications');
+            const notifications = await response.json();
+            const notificationsContainer = document.getElementById('notifications');
+            notificationsContainer.innerHTML = '';
+            notifications.forEach(notification => {
+                const notificationElement = document.createElement('p');
+                notificationElement.textContent = notification;
+                notificationsContainer.appendChild(notificationElement);
+            });
+        }
+
         function startCapture() {
             const selectedInterface = document.getElementById('interfaces').value;
             fetch(`/start_capture?interface=${selectedInterface}`);
@@ -75,9 +93,14 @@
             fetch('/stop_capture');
         }
 
+        function clearLogs() {
+            fetch('/clear_logs').then(() => fetchLogs());
+        }
+
         window.onload = function() {
             fetchInterfaces();
             setInterval(fetchLogs, 1000); // Fetch logs every second
+            setInterval(fetchNotifications, 1000); // Fetch notifications every second
         }
     </script>
 </head>
@@ -88,9 +111,15 @@
         <select id="interfaces"></select>
         <button onclick="startCapture()">Start Capture</button>
         <button onclick="stopCapture()">Stop Capture</button>
+        <button onclick="clearLogs()">Clear Logs</button>
     </div>
-    <div id="logs">
-        <!-- Logs will be displayed here -->
+    <div id="container">
+        <div id="logs">
+            <!-- Logs will be displayed here -->
+        </div>
+        <div id="notifications">
+            <!-- Notifications will be displayed here -->
+        </div>
     </div>
 </body>
 </html>
