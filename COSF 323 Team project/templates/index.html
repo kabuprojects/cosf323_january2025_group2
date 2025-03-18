@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packet Logs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #333;
+            margin-top: 20px;
+        }
+        #container {
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+            max-width: 1600px;
+            margin-top: 20px;
+            gap: 20px; 
+        }
+        #logs, #notifications {
+            width: 48%;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow-y: auto;
+            max-height: 70vh;
+        }
+        #logs p, #notifications p {
+            background: #e7f3fe;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+            font-family: monospace;
+        }
+        #interfaces {
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        async function fetchInterfaces() {
+            const response = await fetch('/interfaces');
+            const interfaces = await response.json();
+            const interfacesContainer = document.getElementById('interfaces');
+            interfacesContainer.innerHTML = '';
+            interfaces.forEach(iface => {
+                const optionElement = document.createElement('option');
+                optionElement.value = iface.name;
+                optionElement.textContent = `${iface.name} (${iface.ip})`;
+                interfacesContainer.appendChild(optionElement);
+            });
+        }
+
+        async function fetchLogs() {
+            const response = await fetch('/logs');
+            const logs = await response.json();
+            const logsContainer = document.getElementById('logs');
+            logsContainer.innerHTML = '';
+            logs.forEach(log => {
+                const logElement = document.createElement('p');
+                logElement.textContent = log;
+                logsContainer.appendChild(logElement);
+            });
+        }
+
+        async function fetchNotifications() {
+            const response = await fetch('/notifications');
+            const notifications = await response.json();
+            const notificationsContainer = document.getElementById('notifications');
+            notificationsContainer.innerHTML = '';
+            notifications.forEach(notification => {
+                const notificationElement = document.createElement('p');
+                notificationElement.textContent = notification;
+                notificationsContainer.appendChild(notificationElement);
+            });
+        }
+
+        function startCapture() {
+            const selectedInterface = document.getElementById('interfaces').value;
+            fetch(`/start_capture?interface=${selectedInterface}`);
+        }
+
+        function stopCapture() {
+            fetch('/stop_capture');
+        }
+
+        function clearLogs() {
+            fetch('/clear_logs').then(() => fetchLogs());
+        }
+
+        window.onload = function() {
+            fetchInterfaces();
+            setInterval(fetchLogs, 1000); // Fetch logs every second
+            setInterval(fetchNotifications, 1000); // Fetch notifications every second
+        }
+    </script>
+</head>
+<body>
+    <h1>Packet Logs</h1>
+    <div>
+        <label for="interfaces">Select Network Interface:</label>
+        <select id="interfaces"></select>
+        <button onclick="startCapture()">Start Capture</button>
+        <button onclick="stopCapture()">Stop Capture</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+    </div>
+    <div id="container">
+        <div id="logs">
+            <!-- Logs will be displayed here -->
+        </div>
+        <div id="notifications">
+            <!-- Notifications will be displayed here -->
+        </div>
+    </div>
+</body>
+</html>
