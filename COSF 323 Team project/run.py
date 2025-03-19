@@ -12,7 +12,7 @@ from collections import defaultdict
 import os
 
 app = Flask(__name__)
-app.config["MONGO_URI"] = "mongodb+srv://mmuriithi:14880@cluster0.jv0jw.mongodb.net/mydatabase"
+app.config["MONGO_URI"] = "mongodb+srv://mwainaina:admin123@cluster0.jv0jw.mongodb.net/mydatabase"
 app.config["SECRET_KEY"] = "your_secret_key"
 mongo = PyMongo(app)
 bcrypt = Bcrypt(app)
@@ -160,7 +160,7 @@ def clear_logs():
 def packet_capture(interface):
     """Start sniffing packets using Scapy."""
     while capture_running:
-        sniff(filter="ip", iface=interface, prn=process_packet, store=False, timeout=1)
+        sniff(filter="ip", iface=interface, prn=process_packet, store=False, timeout=10)
 
 @app.route('/interfaces')
 def interfaces():
