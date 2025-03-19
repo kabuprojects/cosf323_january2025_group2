@@ -1,6 +1,7 @@
 body {
     font-family: Arial, sans-serif;
     background: #f4f4f9; /* Light gray background for a clean look */
+    background: url('/static/index_background.jpg') no-repeat center center fixed;
     margin: 0;
     padding: 0;
     display: flex;
