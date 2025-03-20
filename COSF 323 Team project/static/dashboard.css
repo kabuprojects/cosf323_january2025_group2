@@ -1,0 +1,85 @@
+body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+    background-color: #f8f9fa;
+    background: url('/static/index_background.jpg') no-repeat center center fixed;
+}
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    background-color: #343a40;
+    color: white;
+    padding: 15px;
+    transition: transform 0.3s ease;
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.sidebar.hidden {
+    transform: translateX(-100%);
+}
+.content {
+    margin-left: 250px;
+    flex-grow: 1;
+    padding: 20px;
+    transition: margin-left 0.3s ease;
+}
+.content.full-width {
+    margin-left: 0;
+}
+.chart-container {
+    width: 300px;
+    height: 300px;
+    margin-right: auto;
+}
+.toggle-btn {
+    position: fixed;
+    top: 15px;
+    left: 265px;
+    z-index: 1000;
+    transition: left 0.3s ease;
+}
+.sidebar.hidden + .toggle-btn {
+    left: 15px;
+}
+.navbar {
+    margin-left: 250px;
+    transition: margin-left 0.3s ease;
+}
+.sidebar.hidden + .navbar {
+    margin-left: 0;
+}
+.nav-link {
+    color: white !important;
+}
+.nav-link:hover {
+    background-color: #495057;
+}
+.sidebar h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+.sidebar ul {
+    padding-left: 0;
+}
+.sidebar ul li {
+    list-style: none;
+}
+.logout-link {
+    color: #ff6347 !important; /* Tomato color */
+    font-weight: bold;
+}
+.logout-link:hover {
+    color: #ff4500 !important; /* OrangeRed color */
+}
+.navbar-brand {
+    font-size: 1.75rem;
+    font-weight: bold;
+}
+.container h1 {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #343a40;
+}
