@@ -1,0 +1,145 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f9; /* Light gray background for a clean look */
+    background: url('/static/index_background.jpg') no-repeat center center fixed;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+nav {
+    width: 100%;
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    margin-left: 20px;
+}
+
+h1 {
+    color: #333;
+    margin-top: 20px;
+}
+
+input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #555;
+}
+
+.message {
+    color: red;
+    text-align: center;
+}
+
+#container {
+    display: flex;
+    justify-content: space-between;
+    width: 80%;
+    max-width: 1200px;
+    margin-top: 20px;
+    gap: 20px; 
+}
+
+#logs, #notifications {
+    width: 48%;
+    background: #fff;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow-y: auto;
+    max-height: 70vh;
+}
+
+.log-entry {
+    padding: 10px;
+    border-radius: 4px;
+    margin: 5px 0;
+    font-family: monospace;
+}
+
+.log-entry.benign {
+    background-color: #e7f3fe;
+    color: #333;
+}
+
+.log-entry.malicious {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+#interfaces {
+    margin-top: 20px;
+}
+
+.container {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-top: 50px;
+}
+
+.controls {
+    display: flex;
+    flex-direction: row; /* Arrange buttons horizontally */
+    align-items: center;
+    justify-content: flex-start; /* Align buttons to the left */
+    width: 80%;
+    max-width: 1200px;
+    margin: 20px 0;
+    gap: 10px; /* Add spacing between buttons */
+}
+
+.controls label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-right: 10px; /* Add spacing between label and dropdown */
+}
+
+.controls select {
+    width: 200px;
+    padding: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.controls button {
+    padding: 8px 10px; /* Reduced size for buttons */
+    border: none;
+    border-radius: 5px;
+    background-color: #0c4b8f;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.controls button:hover {
+    background-color: #126fd3;
+}

@@ -1,0 +1,108 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+}
+
+.wrap {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 8px;
+}
+
+.navbar h1 {
+    margin: 0;
+    font-size: 24px;
+}
+
+.logout-btn {
+    text-decoration: none;
+    color: white;
+    background-color: #ff4d4d;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.logout-btn:hover {
+    background-color: #e60000;
+}
+
+.email-section {
+    margin-top: 20px;
+    max-height: 500px; /* Limit the height of the section */
+    overflow-y: auto; /* Add vertical scrolling if content overflows */
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f4f4f4;
+}
+
+.email-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.email-card {
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.email-card h3 {
+    margin: 0 0 10px;
+    font-size: 18px;
+}
+
+.email-card p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.email-card.good {
+    background-color: #e6ffe6;
+    border-left: 5px solid #33cc33;
+}
+
+.email-card.malicious {
+    background-color: #ffe6e6;
+    border-left: 5px solid #ff3333;
+}
+
+.no-emails {
+    text-align: center;
+    font-size: 16px;
+    color: #666;
+}
+
+.back-btn {
+    display: inline-block;
+    margin-top: 20px;
+    text-decoration: none;
+    color: white;
+    background-color: #007bff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.back-btn:hover {
+    background-color: #0056b3;
+}
