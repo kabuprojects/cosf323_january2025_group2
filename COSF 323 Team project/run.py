@@ -160,7 +160,7 @@ def clear_logs():
 def packet_capture(interface):
     """Start sniffing packets using Scapy."""
     while capture_running:
-        sniff(filter="ip", iface=interface, prn=process_packet, store=False, timeout=10)
+        sniff(filter="ip", iface=interface, prn=process_packet, store=False, timeout=5)
 
 @app.route('/interfaces')
 def interfaces():
@@ -179,7 +179,7 @@ def interfaces():
 def index():
     """Serve the main page with packet logs."""
     if 'username' in session:
-        return render_template('index.html', logs=packet_logs)
+        return redirect(url_for('login'))
     return redirect(url_for('login'))
 
 @app.route('/logs')
@@ -205,7 +205,7 @@ def login():
 
         if login_user and bcrypt.check_password_hash(login_user['password'], request.form['password']):
             session['username'] = request.form['username']
-            return redirect(url_for('index'))
+            return redirect(url_for('dashboard'))
 
         flash('Invalid username/password combination')
     return render_template('login.html')
@@ -234,6 +234,29 @@ def register():
 def logout():
     """Logout the current user."""
     session.pop('username', None)
+    return redirect(url_for('login'))
+
+@app.route('/dashboard')
+def dashboard():
+    """Serve the dashboard page."""
+    if 'username' in session:
+        return render_template('dashboard.html')
+    return redirect(url_for('login'))
+
+@app.route('/packet_stats')
+def packet_stats():
+    """Provide packet statistics in JSON format."""
+    if 'username' in session:
+        benign_count = sum(1 for log in packet_logs if log['type'] == 'benign')
+        malicious_count = sum(1 for log in packet_logs if log['type'] == 'malicious')
+        return jsonify({'benign': benign_count, 'malicious': malicious_count})
+    return redirect(url_for('login'))
+
+@app.route('/packet_capture')
+def packet_capture_page():
+    """Serve the packet capture page."""
+    if 'username' in session:
+        return render_template('packet_capture.html')
     return redirect(url_for('login'))
 
 if __name__ == "__main__":
