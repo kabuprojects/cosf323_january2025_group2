@@ -191,8 +191,8 @@ def interfaces():
 
 @app.route('/')
 def index():
-    """Render the dashboard page."""
-    return render_template('dashboard.html')
+    """Redirect to the login page."""
+    return redirect(url_for('login'))
 
 @app.route('/logs')
 def logs():
