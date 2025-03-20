@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Packet Logs</title>
+    <title>Packet Scanning</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='packet_capture.css') }}">
     <script>
         async function fetchInterfaces() {
             const response = await fetch('/interfaces');
@@ -39,6 +39,18 @@
                 logElement.textContent = log.message;
                 logElement.className = `log-entry ${log.type}`;
                 logsContainer.appendChild(logElement);
+            });
+        }
+
+        async function fetchNotifications() {
+            const response = await fetch('/notifications');
+            const notifications = await response.json();
+            const notificationsContainer = document.getElementById('notifications');
+            notificationsContainer.innerHTML = '';
+            notifications.forEach(notification => {
+                const notificationElement = document.createElement('p');
+                notificationElement.textContent = notification;
+                notificationsContainer.appendChild(notificationElement);
             });
         }
 
@@ -87,15 +99,15 @@
         window.onload = function() {
             fetchInterfaces();
             fetchLogs();
+            fetchNotifications();
+            setInterval(fetchLogs, 5000); // Fetch logs every 5 seconds
+            setInterval(fetchNotifications, 5000); // Fetch notifications every 5 seconds
         }
     </script>
 </head>
 <body>
     <nav>
-        <div>Packet Logs</div>
-        <div>
-            <a href="/logout">Logout</a>
-        </div>
+        <div>Packet Scanning</div>
     </nav>
     <h1>Packet Logs</h1>
     <div class="controls">
@@ -119,9 +131,11 @@
     </div>
     <div id="container">
         <div id="logs">
+            <h2>All Logs</h2>
             <!-- Logs will be displayed here -->
         </div>
         <div id="notifications">
+            <h2>Malicious Packets</h2>
             <!-- Notifications will be displayed here -->
         </div>
     </div>
