@@ -130,10 +130,10 @@ button:hover {
 }
 
 .controls button {
-    padding: 8px 15px; /* Reduced size for buttons */
+    padding: 8px 10px; /* Reduced size for buttons */
     border: none;
     border-radius: 5px;
-    background-color: #007bff;
+    background-color: #0c4b8f;
     color: white;
     font-size: 14px;
     cursor: pointer;
@@ -141,5 +141,5 @@ button:hover {
 }
 
 .controls button:hover {
-    background-color: #0056b3;
+    background-color: #126fd3;
 }
