@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Emails</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='emails.css') }}">
+</head>
+<body>
+    <div class="wrap">
+        <!-- Navigation bar with Logout button -->
+        <nav class="navbar">
+            <h1>User Emails</h1>
+            <a href="{{ url_for('logout_email') }}" class="btn logout-btn">Logout</a>
+        </nav>
+
+        <section class="email-section">
+            {% if emails %}
+                <div class="email-list">
+                    {% for email in emails %}
+                        <div class="email-card {% if email.classification == 'Malicious' %}malicious{% else %}good{% endif %}">
+                            <h3>Subject: {{ email.subject }}</h3>
+                            <p><strong>From:</strong> {{ email.sender }}</p>
+                            <p><strong>Classification:</strong> {{ email.classification }}</p>
+                            <p>{{ email.body }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="no-emails">No emails found or an error occurred while fetching emails.</p>
+            {% endif %}
+        </section>
+
+        <a href="{{ url_for('index') }}" class="btn back-btn">Back to Dashboard</a>
+    </div>
+</body>
+</html>

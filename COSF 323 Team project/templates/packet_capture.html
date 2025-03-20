@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Packet Scanning</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='packet_capture.css') }}">
+    <script>
+        async function fetchInterfaces() {
+            const response = await fetch('/interfaces');
+            const interfaces = await response.json();
+            const interfacesContainer = document.getElementById('interfaces');
+            interfacesContainer.innerHTML = '';
+            interfaces.forEach(iface => {
+                const optionElement = document.createElement('option');
+                optionElement.value = iface.name;
+                optionElement.textContent = `${iface.name} (${iface.ip})`;
+                interfacesContainer.appendChild(optionElement);
+            });
+        }
+
+        async function fetchLogs(filter = null, sort = null) {
+            const response = await fetch('/logs');
+            const logs = await response.json();
+            const logsContainer = document.getElementById('logs');
+            logsContainer.innerHTML = '';
+
+            // Apply filter if provided
+            let filteredLogs = filter ? logs.filter(filter) : logs;
+
+            // Apply sorting if provided
+            if (sort) {
+                filteredLogs = filteredLogs.sort(sort);
+            }
+
+            filteredLogs.forEach(log => {
+                const logElement = document.createElement('p');
+                logElement.textContent = log.message;
+                logElement.className = `log-entry ${log.type}`;
+                logsContainer.appendChild(logElement);
+            });
+        }
+
+        async function fetchNotifications() {
+            const response = await fetch('/notifications');
+            const notifications = await response.json();
+            const notificationsContainer = document.getElementById('notifications');
+            notificationsContainer.innerHTML = '';
+            notifications.forEach(notification => {
+                const notificationElement = document.createElement('p');
+                notificationElement.textContent = notification;
+                notificationsContainer.appendChild(notificationElement);
+            });
+        }
+
+        function applyFilter() {
+            const filterType = document.getElementById('filter-type').value;
+
+            // Define filter logic
+            const filterLogic = (log) => {
+                if (filterType === 'good') return log.type === 'benign';
+                if (filterType === 'malicious') return log.type === 'malicious';
+                return true; // No filter
+            };
+
+            fetchLogs(filterLogic);
+        }
+
+        function applySort() {
+            const sortType = document.getElementById('sort-type').value;
+
+            // Define sort logic
+            const sortLogic = (a, b) => {
+                if (sortType === 'time') {
+                    return new Date(a.timestamp) - new Date(b.timestamp); // Sort by time (ascending)
+                } else if (sortType === 'date') {
+                    return new Date(a.timestamp).setHours(0, 0, 0, 0) - new Date(b.timestamp).setHours(0, 0, 0, 0); // Sort by date (ascending)
+                }
+                return 0; // No sorting
+            };
+
+            fetchLogs(null, sortLogic);
+        }
+
+        function startCapture() {
+            const selectedInterface = document.getElementById('interfaces').value;
+            fetch(`/start_capture?interface=${selectedInterface}`);
+        }
+
+        function stopCapture() {
+            fetch('/stop_capture');
+        }
+
+        function clearLogs() {
+            fetch('/clear_logs').then(() => fetchLogs());
+        }
+
+        window.onload = function() {
+            fetchInterfaces();
+            fetchLogs();
+            fetchNotifications();
+            setInterval(fetchLogs, 5000); // Fetch logs every 5 seconds
+            setInterval(fetchNotifications, 5000); // Fetch notifications every 5 seconds
+        }
+    </script>
+</head>
+<body>
+    <nav>
+        <div>Packet Scanning</div>
+    </nav>
+    <h1>Packet Logs</h1>
+    <div class="controls">
+        <label for="interfaces">Select Network Interface:</label>
+        <select id="interfaces"></select>
+        <button onclick="startCapture()">Start Capture</button>
+        <button onclick="stopCapture()">Stop Capture</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <select id="filter-type">
+            <option value="">All</option>
+            <option value="good">Good Packets</option>
+            <option value="malicious">Malicious Packets</option>
+        </select>
+        <button onclick="applyFilter()">Filter</button>
+        <select id="sort-type">
+            <option value="">No Sorting</option>
+            <option value="time">Sort by Time</option>
+            <option value="date">Sort by Date</option>
+        </select>
+        <button onclick="applySort()">Sort</button>
+    </div>
+    <div id="container">
+        <div id="logs">
+            <h2>All Logs</h2>
+            <!-- Logs will be displayed here -->
+        </div>
+        <div id="notifications">
+            <h2>Malicious Packets</h2>
+            <!-- Notifications will be displayed here -->
+        </div>
+    </div>
+</body>
+</html>

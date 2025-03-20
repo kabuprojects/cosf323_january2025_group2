@@ -1,0 +1,121 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: url('/static/background.png') no-repeat center center fixed;
+    background-size: cover;
+}
+
+.wrap {
+    width: 450px;
+    background: rgba(255, 255, 255, 0.1); /* Semi-transparent background */
+    color: white;
+    border-radius: 12px;
+    padding: 30px 40px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.wrap h1 {
+    text-align: center;
+    font-size: 40px;
+    margin-bottom: 20px;
+}
+
+.wrap .input-box {
+    margin: 20px 0;
+    position: relative;
+    height: 50px;
+    width: 100%;
+}
+
+.input-box input {
+    height: 100%;
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    font-size: 16px;
+    color: white;
+    padding: 0 45px 0 20px;
+}
+
+.input-box i {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    color: white;
+}
+
+.input-box input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.wrap .rem-forg {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14.5px;
+    margin: 10px 0 20px;
+}
+
+.rem-forg label input {
+    accent-color: white;
+    margin-right: 10px;
+}
+
+.rem-forg a {
+    color: white;
+    text-decoration: none;
+}
+
+.rem-forg a:hover {
+    text-decoration: underline;
+}
+
+.wrap .btn {
+    width: 100%;
+    height: 45px;
+    background: white;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+    cursor: pointer;
+    font-size: 16px;
+    color: #333;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.wrap .btn:hover {
+    background: #f0f0f0;
+}
+
+.wrap .reg-link {
+    font-size: 14.5px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.reg-link p a {
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.reg-link p a:hover {
+    text-decoration: underline;
+}
