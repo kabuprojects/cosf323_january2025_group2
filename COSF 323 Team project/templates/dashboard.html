@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        async function fetchPacketStats() {
+            const response = await fetch('/packet_stats');
+            const stats = await response.json();
+            return stats;
+        }
+
+        async function renderChart() {
+            const stats = await fetchPacketStats();
+            const ctx = document.getElementById('packetChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Benign Packets', 'Malicious Packets'],
+                    datasets: [{
+                        data: [stats.benign, stats.malicious],
+                        backgroundColor: ['#36a2eb', '#ff6384']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#343a40', // Darker color for legend text
+                                font: {
+                                    size: 14, // Increase font size
+                                    weight: 'bold' // Make font bold
+                                }
+                            }
+                        },
+                    }
+                }
+            });
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const toggleBtn = document.querySelector('.toggle-btn');
+            const content = document.querySelector('.content');
+            const navbar = document.querySelector('.navbar');
+
+            sidebar.classList.toggle('hidden');
+            toggleBtn.classList.toggle('sidebar-hidden');
+            content.classList.toggle('full-width');
+            navbar.classList.toggle('full-width');
+
+            if (sidebar.classList.contains('hidden')) {
+                toggleBtn.textContent = '☰';
+            } else {
+                toggleBtn.textContent = '\u2715'; // Unicode for "X"
+            }
+        }
+
+        window.onload = function() {
+            renderChart();
+        }
+    </script>
+</head>
+<body>
+    <div class="sidebar">
+        <div>
+            <h2>Menu</h2>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="{{ url_for('dashboard') }}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="{{ url_for('packet_capture_page') }}">Packet Scanning</a>
+                </li>
+            </ul>
+        </div>
+        <div>
+            <a class="nav-link logout-link" href="/logout">Logout</a>
+        </div>
+    </div>
+    <button class="btn btn-primary toggle-btn" onclick="toggleSidebar()">☰</button>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">Dashboard</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link logout-link" href="/logout">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="content">
+        <div class="container mt-5">
+            <h1>Packet Statistics</h1>
+            <div class="chart-container">
+                <canvas id="packetChart"></canvas>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
