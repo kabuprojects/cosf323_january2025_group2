@@ -182,6 +182,69 @@ def clear_logs():
     packet_logs = []
     return jsonify({"status": "Packet logs cleared"})
 
+# Global variable to store the block status
+block_packets = False
+
+@app.route('/toggle_block_packets')
+def toggle_block_packets():
+    global block_packets
+    block_packets = request.args.get('block') == 'true'
+    return jsonify({"status": "Block status updated", "block_packets": block_packets})
+
+def process_packet(packet):
+    """Callback function to process each captured packet."""
+    if packet.haslayer(IP):
+        ip_layer = packet.getlayer(IP)
+        transport_layer = "Unknown"
+        if packet.haslayer(TCP):
+            transport_layer = "TCP"
+        elif packet.haslayer(UDP):
+            transport_layer = "UDP"
+        
+        # Extract features from the packet
+        features = extract_features(packet)
+        print(f"Extracted features: {features}")  # Debugging statement
+        
+        # Predict if the packet is malicious or benign
+        prediction = model.predict([features])[0]
+        print(f"Prediction: {prediction}")  # Debugging statement
+        
+        if block_packets and prediction == 0:
+            print(f"Blocked malicious packet: {ip_layer.src} -> {ip_layer.dst} ({transport_layer})")
+            return  # Skip processing this packet
+        
+        log = {
+            'message': f"Packet: {ip_layer.src} -> {ip_layer.dst} ({transport_layer}) at {time.strftime('%Y-%m-%d %H:%M:%S')}",
+            'type': 'benign' if prediction == 1 else 'malicious',
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'src_ip': ip_layer.src,
+            'dst_ip': ip_layer.dst,
+            'protocol': transport_layer
+        }
+        
+        # Check if the packet already exists in the logs
+        if not any(
+            existing_log['src_ip'] == log['src_ip'] and
+            existing_log['dst_ip'] == log['dst_ip'] and
+            existing_log['protocol'] == log['protocol'] and
+            existing_log['timestamp'] == log['timestamp']
+            for existing_log in packet_logs
+        ):
+            if prediction == 0:  # 0 indicates a malicious packet
+                log['message'] += " [WARNING: Malicious Packet Detected]"
+                # Inform the user about the detected malicious packet
+                inform_user(log['message'])
+            else:  # 1 indicates a benign packet
+                log['message'] += " [INFO: Benign Packet]"
+            
+            # Add the log to the packet logs list
+            packet_logs.append(log)
+            # Ensure the packet logs list does not exceed the limit
+            if len(packet_logs) > PACKET_LOGS_LIMIT:
+                packet_logs.pop(0)
+            
+            print(log['message'])  # Print to console for debugging
+
 def packet_capture(interface):
     """Start sniffing packets using Scapy."""
     while capture_running:
