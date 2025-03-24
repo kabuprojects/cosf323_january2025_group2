@@ -6,6 +6,7 @@
     <title>Packet Scanning</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='packet_capture.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script>
         async function fetchInterfaces() {
             const response = await fetch('/interfaces');
@@ -96,6 +97,13 @@
             fetch('/clear_logs').then(() => fetchLogs());
         }
 
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const container = document.querySelector('.container');
+            sidebar.classList.toggle('hidden');
+            container.classList.toggle('full-width');
+        }
+
         window.onload = function() {
             fetchInterfaces();
             fetchLogs();
@@ -106,38 +114,88 @@
     </script>
 </head>
 <body>
-    <nav>
-        <div>Packet Scanning</div>
-    </nav>
-    <h1>Packet Logs</h1>
-    <div class="controls">
-        <label for="interfaces">Select Network Interface:</label>
-        <select id="interfaces"></select>
-        <button onclick="startCapture()">Start Capture</button>
-        <button onclick="stopCapture()">Stop Capture</button>
-        <button onclick="clearLogs()">Clear Logs</button>
-        <select id="filter-type">
-            <option value="">All</option>
-            <option value="good">Good Packets</option>
-            <option value="malicious">Malicious Packets</option>
-        </select>
-        <button onclick="applyFilter()">Filter</button>
-        <select id="sort-type">
-            <option value="">No Sorting</option>
-            <option value="time">Sort by Time</option>
-            <option value="date">Sort by Date</option>
-        </select>
-        <button onclick="applySort()">Sort</button>
-    </div>
-    <div id="container">
-        <div id="logs">
-            <h2>All Logs</h2>
-            <!-- Logs will be displayed here -->
+    <div class="d-flex">
+        <button class="btn btn-dark toggle-btn" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+        <nav class="sidebar bg-dark text-white p-3">
+            <h2>Menu</h2>
+            <ul class="nav flex-column mt-4">
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="{{ url_for('dashboard') }}">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="{{ url_for('scan_emails') }}">Email Scanning</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" href="/logout">Logout</a>
+                </li>
+            </ul>
+        </nav>
+        <div class="container mt-5">
+            <h1>Packet Logs</h1>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="interfaces">Select Network Interface:</label>
+                        <select id="interfaces" class="form-control w-auto d-inline-block"></select>
+                        <button class="btn btn-success" onclick="startCapture()">Start Capture</button>
+                        <button class="btn btn-danger" onclick="stopCapture()">Stop Capture</button>
+                        <button class="btn btn-warning" onclick="clearLogs()">Clear Logs</button>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="filter-type">Filter:</label>
+                        <select id="filter-type" class="form-control w-auto d-inline-block">
+                            <option value="">All</option>
+                            <option value="good">Good Packets</option>
+                            <option value="malicious">Malicious Packets</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="applyFilter()">Apply Filter</button>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="sort-type">Sort By:</label>
+                        <select id="sort-type" class="form-control w-auto d-inline-block">
+                            <option value="">No Sorting</option>
+                            <option value="time">Sort by Time</option>
+                            <option value="date">Sort by Date</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="applySort()">Apply Sort</button>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="block_packets">Block Malicious Packets:</label>
+                        <input type="checkbox" id="block_packets" onchange="toggleBlockPackets()">
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6 pr-2" id="logs">
+                    <h2>All Logs</h2>
+                    <!-- Logs will be displayed here -->
+                </div>
+                <div class="col-md-6 pl-2" id="notifications">
+                    <h2>Malicious Packets</h2>
+                    <!-- Notifications will be displayed here -->
+                </div>
+            </div>
         </div>
-        <div id="notifications">
-            <h2>Malicious Packets</h2>
-            <!-- Notifications will be displayed here -->
-        </div>
     </div>
+    <script>
+        function toggleBlockPackets() {
+            const blockPackets = document.getElementById('block_packets').checked;
+            fetch(`/toggle_block_packets?block=${blockPackets}`);
+        }
+    </script>
 </body>
 </html>
