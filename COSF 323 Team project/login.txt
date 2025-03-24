@@ -1,0 +1,42 @@
+from flask import Flask, render_template, request, redirect, url_for, jsonify
+import threading
+
+app = Flask(__name__)
+
+# Simulated user database (in a real app, use a proper database)
+users = {
+    "user@example.com": "password123"
+}
+
+@app.route('/')
+def index():
+    return redirect(url_for('login'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        # Check if credentials are valid
+        if email in users and users[email] == password:
+            return jsonify({"status": "success", "message": "Login successful"})
+        else:
+            return jsonify({"status": "error", "message": "Invalid email or password"}), 401
+    
+    # If GET request, show login page
+    return render_template('login.html')
+
+# For the packet sniffer functionality (keeping your original structure)
+packet_logs = []
+capture_thread = None
+capture_running = False
+
+# Add your existing packet sniffer routes here
+@app.route('/dashboard')
+def dashboard():
+    # This would be your protected page after login
+    return "Welcome to the Dashboard"  # Replace with your packet sniffer interface
+
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0', port=5000)
