@@ -1,21 +1,46 @@
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session, flash
 from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+import base64
+import os
+import joblib
+import pandas as pd
+from collections import defaultdict
 import threading
 from scapy.all import sniff, IP, TCP, UDP
 import time
 import psutil
 import socket
-import joblib
-import pandas as pd
-from collections import defaultdict
-import os
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired
+
+# Scopes required for Gmail API
+SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb+srv://mwainaina:admin123@cluster0.jv0jw.mongodb.net/mydatabase"
-app.config["SECRET_KEY"] = "your_secret_key"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "your_secret_key_here")
+app.config["MAIL_SERVER"] = os.environ.get("MAIL_SERVER", "sandbox.smtp.mailtrap.io")
+app.config["MAIL_PORT"] = int(os.environ.get("MAIL_PORT", 587))
+app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME", "5d0c590671c2c6")
+app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD", "fc3c94f4e6460a")
+app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS", "True") == "True"
+app.config["MAIL_USE_SSL"] = os.environ.get("MAIL_USE_SSL", "False") == "True"
+
+mail = Mail(app)
+s = URLSafeTimedSerializer(app.config["SECRET_KEY"])
+
 mongo = PyMongo(app)
 bcrypt = Bcrypt(app)
+
+# Load the trained email classification model
+email_model_path = os.path.join(os.path.dirname(__file__), 'email_model.pkl')
+vectorizer_path = os.path.join(os.path.dirname(__file__), 'vectorizer.pkl')
+email_model = joblib.load(email_model_path)
+vectorizer = joblib.load(vectorizer_path)
 
 # Load the trained model
 model_path = os.path.join(os.path.dirname(__file__), 'trained_model.pkl')
@@ -177,9 +202,7 @@ def interfaces():
 
 @app.route('/')
 def index():
-    """Serve the main page with packet logs."""
-    if 'username' in session:
-        return redirect(url_for('login'))
+    """Redirect to the login page."""
     return redirect(url_for('login'))
 
 @app.route('/logs')
@@ -219,16 +242,39 @@ def register():
 
         if existing_user is None:
             hashpass = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
+            email = request.form['email']
+            token = s.dumps(email, salt='email-confirm')
+            link = url_for('confirm_email', token=token, _external=True)
+
+            msg = Message('Confirm your email', sender=app.config["MAIL_USERNAME"], recipients=[email])
+            msg.body = f'Your link is {link}'
+            mail.send(msg)
+
             users.insert_one({
                 'username': request.form['username'],
-                'email': request.form['email'],
-                'password': hashpass
+                'email': email,
+                'password': hashpass,
+                'confirmed': False
             })
-            flash('Registration successful! Please log in.')
+            flash('A confirmation email has been sent to your email address. Please confirm to complete registration.')
             return redirect(url_for('login'))
 
         flash('Username already exists')
     return render_template('register.html')
+
+@app.route('/confirm_email/<token>')
+def confirm_email(token):
+    try:
+        email = s.loads(token, salt='email-confirm', max_age=3600)
+        users = mongo.db.users
+        user = users.find_one({'email': email})
+        if user:
+            users.update_one({'email': email}, {'$set': {'confirmed': True}})
+            message = 'Your email has been confirmed. You can now log in.'
+            return render_template('confirm_email.html', message=message)
+    except SignatureExpired:
+        message = 'The confirmation link has expired.'
+        return render_template('confirm_email.html', message=message)
 
 @app.route('/logout')
 def logout():
@@ -258,6 +304,125 @@ def packet_capture_page():
     if 'username' in session:
         return render_template('packet_capture.html')
     return redirect(url_for('login'))
+
+# -------------------- Email Scanning --------------------
+
+def authenticate_gmail():
+    """Authenticate and return the Gmail API service."""
+    creds = None
+    try:
+        # Check if token.json exists
+        if os.path.exists('token.json'):
+            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+            print("Loaded credentials from token.json.")  # Debugging statement
+
+        # If no valid credentials, authenticate the user
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+                print("Refreshed expired credentials.")  # Debugging statement
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+                creds = flow.run_local_server(port=0)
+                print("Authenticated successfully.")  # Debugging statement
+
+            # Save the credentials to token.json
+            with open('token.json', 'w') as token:
+                token.write(creds.to_json())
+                print("Saved credentials to token.json.")  # Debugging statement
+
+        return build('gmail', 'v1', credentials=creds)
+
+    except Exception as e:
+        print(f"An error occurred during Gmail authentication: {e}")  # Debugging statement
+        return None
+
+def fetch_emails():
+    """Fetch emails from the user's Gmail account."""
+    try:
+        service = authenticate_gmail()
+        print("Gmail API authenticated successfully.")  # Debugging statement
+
+        results = service.users().messages().list(userId='me').execute()
+        messages = results.get('messages', [])
+        print(f"Fetched {len(messages)} messages.")  # Debugging statement
+
+        email_data = []
+        for message in messages[:10]:  # Limit to the first 10 emails
+            print(f"Fetching message ID: {message['id']}")  # Debugging statement
+            msg = service.users().messages().get(userId='me', id=message['id']).execute()
+            payload = msg.get('payload', {})
+            headers = payload.get('headers', [])
+            subject = next((header['value'] for header in headers if header['name'] == 'Subject'), "No Subject")
+            sender = next((header['value'] for header in headers if header['name'] == 'From'), "Unknown Sender")
+            body = ""
+            if 'parts' in payload:
+                for part in payload['parts']:
+                    if part['mimeType'] == 'text/plain':
+                        body = base64.urlsafe_b64decode(part['body']['data']).decode()
+
+            email_data.append({'subject': subject, 'sender': sender, 'body': body})
+
+        print(f"Email data: {email_data}")  # Debugging statement
+        return email_data
+    except Exception as e:
+        print(f"An error occurred while fetching emails: {e}")  # Debugging statement
+        return []
+
+def classify_email(email_body):
+    """Classify the email content as genuine or malicious."""
+    try:
+        print(f"Classifying email body: {email_body}")  # Debugging statement
+        email_vectorized = vectorizer.transform([email_body])
+        prediction = email_model.predict(email_vectorized)[0]
+        print(f"Prediction: {prediction}")  # Debugging statement
+        return "Malicious" if prediction == 0 else "Good"
+    except Exception as e:
+        print(f"An error occurred during email classification: {e}")  # Debugging statement
+        return "Unknown"
+
+@app.route('/scan_emails', methods=['GET'])
+def scan_emails():
+    """Scan live emails using Gmail API and classify them."""
+    try:
+        # Authenticate with Gmail API
+        service = authenticate_gmail()
+        print("Gmail API authenticated successfully.")  # Debugging statement
+
+        # Fetch emails
+        emails = fetch_emails()
+        print(f"Fetched emails: {emails}")  # Debugging statement
+
+        # Classify emails
+        classified_emails = []
+        for email in emails:
+            print(f"Classifying email: {email}")  # Debugging statement
+            classification = classify_email(email['body'])
+            email['classification'] = classification
+            classified_emails.append(email)
+
+        print(f"Classified emails: {classified_emails}")  # Debugging statement
+
+        # Render the results in the emails.html template
+        return render_template('emails.html', emails=classified_emails)
+
+    except Exception as e:
+        print(f"An error occurred while scanning emails: {e}")  # Debugging statement
+        flash("An error occurred while scanning emails. Please try again.", "danger")
+        return redirect(url_for('dashboard'))
+
+@app.route('/logout_email', methods=['GET'])
+def logout_email():
+    """Log out from Gmail by deleting the token.json file."""
+    try:
+        if os.path.exists('token.json'):
+            os.remove('token.json')
+            print("Logged out successfully. token.json deleted.")  # Debugging statement
+        flash("You have been logged out from Gmail.", "success")  # Flash success message
+    except Exception as e:
+        print(f"An error occurred during logout: {e}")  # Debugging statement
+        flash("An error occurred while logging out. Please try again.", "danger")  # Flash error message
+    return redirect(url_for('dashboard'))
 
 if __name__ == "__main__":
     # Run the Flask web application
